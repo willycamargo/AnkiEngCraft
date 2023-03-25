@@ -21,7 +21,7 @@ service_region = os.getenv('AZURE_REGION')
 anki_model_id = int(os.getenv('ANKI_MODEL_ID'))
 anki_deck_id = int(os.getenv('ANKI_DECK_ID'))
 
-# Reads CSV data from a file
+# Reads data from a CSV file and returns a list of dictionaries.
 def read_csv_file(file_name):
     print('Reading initial CSV file.')
     with open(file_name, 'r') as f:
@@ -29,7 +29,7 @@ def read_csv_file(file_name):
         csv_data = list(reader)
         return csv_data
 
-# Reads CSV data from a file
+# Writes a list of dictionaries to a CSV file
 def write_csv_file(file_name, cards):
     print('Writing final CSV file.')
     keys = cards[0].keys()
@@ -38,6 +38,7 @@ def write_csv_file(file_name, cards):
         dict_writer.writeheader()
         dict_writer.writerows(cards)
 
+# Creates an Anki deck from a list of card data, and saves it to an .apkg file.
 def create_anki_deck(deck_name, cards):
     print('Creating Anki deck.')
 
@@ -79,12 +80,14 @@ def create_anki_deck(deck_name, cards):
     genanki.Package(deck, media_files=media_files).write_to_file(f"output/{deck_name}.apkg")  # Update this line
     print(f"Anki deck saved as output/{deck_name}.apkg")
 
+# Translates a list of sentences and creates a list of cards with translations and audio tags
 def generate_translated_cards(sentences):
     print('Initializing translation.')
     with Pool(cpu_count()) as pool:
         cards = pool.map(partial(create_translated_card), sentences)
     return cards
 
+# Translates a sentence, generates an audio tag, and creates a card with the translation and audio
 def create_translated_card(sentence):
     print('Translating sentence: ' + sentence)
     translator = Translator()
@@ -97,6 +100,7 @@ def create_translated_card(sentence):
 
     return current_card
 
+# Generates an audio tag for a given text using Azure Speech API and saves the audio file as an MP3
 def generate_audio_tag(text, speech_config):
     audio_filename = f"output/audio/{text}.mp3"
     print(f"Checking if audio file {audio_filename} exists.")
