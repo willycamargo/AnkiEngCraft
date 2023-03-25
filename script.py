@@ -22,7 +22,7 @@ anki_model_id = int(os.getenv('ANKI_MODEL_ID'))
 anki_deck_id = int(os.getenv('ANKI_DECK_ID'))
 
 # Reads CSV data from a file
-def read_csv(file_name):
+def read_csv_file(file_name):
     print('Reading initial CSV file.')
     with open(file_name, 'r') as f:
         reader = csv.DictReader(f)
@@ -30,7 +30,7 @@ def read_csv(file_name):
         return csv_data
 
 # Reads CSV data from a file
-def write_csv(file_name, cards):
+def write_csv_file(file_name, cards):
     print('Writing final CSV file.')
     keys = cards[0].keys()
     with open(file_name, 'w', newline='') as output_file:
@@ -79,20 +79,20 @@ def create_anki_deck(deck_name, cards):
     genanki.Package(deck, media_files=media_files).write_to_file(f"output/{deck_name}.apkg")  # Update this line
     print(f"Anki deck saved as output/{deck_name}.apkg")
 
-def translate_sentence(sentence):
+def create_translated_card(sentence):
     print('Translating sentence: ' + sentence)
     translator = Translator()
     translation = translator.translate(sentence, src='en', dest='pt')
     current_card = {"Front": sentence, "Back": translation.text}
 
     speech_config = SpeechConfig(subscription=speech_key, region=service_region)
-    audio_tag = synthesize_speech(sentence, speech_config)
+    audio_tag = generate_audio_tag(sentence, speech_config)
     current_card["Audio"] = audio_tag
 
     return current_card
 
 
-def synthesize_speech(text, speech_config):
+def generate_audio_tag(text, speech_config):
     audio_filename = f"output/audio/{text}.mp3"
     print(f"Checking if audio file {audio_filename} exists.")
     if not os.path.exists(audio_filename):
@@ -103,10 +103,10 @@ def synthesize_speech(text, speech_config):
     return f"[sound:{text}.mp3]"
 
 
-def create_cards_with_translation(sentences):
+def generate_translated_cards(sentences):
     print('Initializing translation.')
     with Pool(cpu_count()) as pool:
-        cards = pool.map(partial(translate_sentence), sentences)
+        cards = pool.map(partial(create_translated_card), sentences)
     return cards
 
 if __name__ == "__main__":
@@ -121,11 +121,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     file_name = args.filename
-    csv_data = read_csv('input/' + file_name)
+    csv_data = read_csv_file('input/' + file_name)
     sentences = [d['Sentence'] for d in csv_data]
-    cards = create_cards_with_translation(sentences)
+    cards = generate_translated_cards(sentences)
     if args.output == 'anki':
         create_anki_deck(file_name.replace('.csv', ''), cards)
     elif args.output == 'csv':
-        write_csv('output/' + file_name, cards)
+        write_csv_file('output/' + file_name, cards)
 
