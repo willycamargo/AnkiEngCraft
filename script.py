@@ -79,6 +79,12 @@ def create_anki_deck(deck_name, cards):
     genanki.Package(deck, media_files=media_files).write_to_file(f"output/{deck_name}.apkg")  # Update this line
     print(f"Anki deck saved as output/{deck_name}.apkg")
 
+def generate_translated_cards(sentences):
+    print('Initializing translation.')
+    with Pool(cpu_count()) as pool:
+        cards = pool.map(partial(create_translated_card), sentences)
+    return cards
+
 def create_translated_card(sentence):
     print('Translating sentence: ' + sentence)
     translator = Translator()
@@ -91,7 +97,6 @@ def create_translated_card(sentence):
 
     return current_card
 
-
 def generate_audio_tag(text, speech_config):
     audio_filename = f"output/audio/{text}.mp3"
     print(f"Checking if audio file {audio_filename} exists.")
@@ -101,13 +106,6 @@ def generate_audio_tag(text, speech_config):
         synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
         synthesizer.speak_text(text)
     return f"[sound:{text}.mp3]"
-
-
-def generate_translated_cards(sentences):
-    print('Initializing translation.')
-    with Pool(cpu_count()) as pool:
-        cards = pool.map(partial(create_translated_card), sentences)
-    return cards
 
 if __name__ == "__main__":
     # Create necessary directories
