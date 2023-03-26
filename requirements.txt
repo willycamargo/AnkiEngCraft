@@ -2,3 +2,5 @@ azure-cognitiveservices-speech==1.26.0
 genanki==0.13.0
 python-dotenv==1.0.0
 googletrans==4.0.0rc1
+python-slugify==8.0.1
+unittest2==1.1.0
