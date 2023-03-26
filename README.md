@@ -1,6 +1,21 @@
-# Anki Deck Creator
+# AnkiPoly
 
-Anki Deck Creator is a Python script that reads sentences from an input file (CSV or TXT format), translates the sentences using Google Translate, generates audio using Azure Speech API, and creates Anki decks (.apkg) or CSV files with the translated sentences and audio files.
+AnkiPoly is a versatile Anki deck generator designed specifically for Portuguese speakers learning English. Simplifying the process of creating custom Anki decks, AnkiPoly accelerates your language learning journey. With future plans for multi-language support and UI expansion, AnkiPoly aims to become an essential tool for polyglots and language enthusiasts alike.
+
+## Features
+
+- Read input sentences from CSV or TXT files
+- Translate English sentences to Portuguese using Google Translate
+- Generate English audio using Azure Speech API
+- Create Anki decks (.apkg) or CSV files with translated sentences and audio files
+- Currently focused on supporting Portuguese speakers learning English, with plans to expand to other language
+
+## Future Plans
+
+- Add support for more languages
+- Develop a dedicated user interface for easier deck creation and customization
+- Integrate additional translation and speech synthesis APIs
+
 
 ## Requirements
 
