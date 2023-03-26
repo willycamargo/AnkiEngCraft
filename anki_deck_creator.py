@@ -4,6 +4,7 @@ import os
 import csv
 import argparse
 import genanki
+import time
 from dotenv import load_dotenv
 from functools import partial
 from googletrans import Translator
@@ -160,4 +161,9 @@ if __name__ == "__main__":
     input_file_name = args.input
     output_file_name = os.path.splitext(args.output if args.output else input_file_name)[0]
     output_format = args.format
+    start_time = time.time()
     anki_deck_creator(input_file_name, output_file_name, output_format)
+    num_cards = len(read_input_file(f'{INPUT_DIR}/' + input_file_name))
+    end_time = time.time()
+    time_taken = end_time - start_time
+    print(f"Generated {num_cards} cards in {time_taken:.2f} seconds.")
