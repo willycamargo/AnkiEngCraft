@@ -2,7 +2,6 @@ import os
 import csv
 import unittest
 import tempfile
-import shutil
 from unittest.mock import patch, MagicMock, call
 from anki_deck_creator import read_input_file, write_csv_file, create_anki_deck, generate_translated_cards, create_translated_card, generate_audio, Translator
 
