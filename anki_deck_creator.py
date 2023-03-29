@@ -5,20 +5,21 @@ import csv
 import argparse
 import genanki
 import time
+import random
 from dotenv import load_dotenv
 from functools import partial
 from googletrans import Translator
 from multiprocessing import Pool, cpu_count
-from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig
+from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig, ResultReason, SpeechSynthesisCancellationDetails
 from slugify import slugify
 
 # Load environment variables from the .env file
 load_dotenv()
 
 # Get Azure Speech API credentials from environment variables
-speech_key = os.getenv('AZURE_SPEECH_KEY')
-service_region = os.getenv('AZURE_REGION')
-speech_config = SpeechConfig(subscription=speech_key, region=service_region)
+azure_speech_key = os.getenv('AZURE_SPEECH_KEY')
+azure_service_region = os.getenv('AZURE_REGION')
+speech_config = SpeechConfig(subscription=azure_speech_key, region=azure_service_region)
 
 # Anki Static IDs
 anki_model_id = int(os.getenv('ANKI_MODEL_ID'))
@@ -66,7 +67,7 @@ def create_anki_deck(deck_name, cards, output_file):
     # Define the Anki model
     model = genanki.Model(
         model_id=anki_model_id,
-        name='English Vocab Model',
+        name='PolyAnki',
         fields=[
             {'name': 'Front'},
             {'name': 'Back'},
@@ -119,16 +120,75 @@ def create_translated_card(sentence):
 
     return current_card
 
+# Generates the SpeechConfig with a random voice
+def get_speech_config_random_voice() -> SpeechConfig:
+    # Available English US voices
+    english_us_voices = [
+        "en-US-AmberNeural",
+        "en-US-AnaNeural",
+        "en-US-AriaNeural",
+        "en-US-AshleyNeural",
+        "en-US-BrandonNeural",
+        "en-US-ChristopherNeural",
+        "en-US-CoraNeural",
+        "en-US-DavisNeural",
+        "en-US-ElizabethNeural",
+        "en-US-EricNeural",
+        "en-US-GuyNeural",
+        "en-US-JacobNeural",
+        "en-US-JaneNeural",
+        "en-US-JasonNeural",
+        "en-US-JennyNeural",
+        "en-US-MichelleNeural",
+        "en-US-MonicaNeural",
+        "en-US-NancyNeural",
+        "en-US-SaraNeural",
+        "en-US-SteffanNeural",
+        "en-US-TonyNeural",
+    ]
+
+    # Choose a random English US voice
+    random_voice = random.choice(english_us_voices)
+
+    return random_voice
+
+def print_red(text):
+    red = '\033[31m'
+    reset = '\033[0m'
+    print(f"{red}{text}{reset}")
+
 # Generates an audio for a given text using Azure Speech API and saves the audio file as an MP3
+MAX_RETRIES_TO_GENERATE_AUDIO = 5
 def generate_audio(text, audio_output_dir=AUDIO_OUTPUT_DIR):
     audio_file_name = slugify(text)
     audio_file_path = f"{audio_output_dir}/{audio_file_name}.mp3"
     print(f"Checking if audio file {audio_file_path} exists.")
-    if not os.path.exists(audio_file_path):
-        print(f"File {audio_file_path} do not exists, creating file using Azure Speech API.")
-        audio_config = AudioConfig(filename=audio_file_path)
-        synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
-        synthesizer.speak_text(text)
+
+    for i in range(MAX_RETRIES_TO_GENERATE_AUDIO):
+        if not os.path.exists(audio_file_path):
+            print(f"File {audio_file_path} does not exist, creating file using Azure Speech API.")
+            audio_config = AudioConfig(filename=audio_file_path)
+            speech_config.speech_synthesis_language = "en-US"
+            speech_config.speech_synthesis_voice_name = get_speech_config_random_voice()
+            synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+            result = synthesizer.speak_text(text)
+            
+            if result.reason == ResultReason.SynthesizingAudioCompleted:
+                print("Audio file created successfully.")
+                break
+            elif result.reason == ResultReason.Canceled:
+                cancellation_details = SpeechSynthesisCancellationDetails(result)
+                print_red(f"Speech synthesis was canceled. Reason: {cancellation_details.reason}")
+                if cancellation_details.error_details:
+                    print_red(f"Error details: {cancellation_details.error_details}")
+                
+                # Remove the file and retry
+                os.remove(audio_file_path)
+        else:
+            break
+    else:
+        raise Exception(f"Failed to create audio file {audio_file_path} after {MAX_RETRIES_TO_GENERATE_AUDIO} retries.")
+
     return [audio_file_name, audio_file_path]
 
 # Reads an input file, generates translated cards with audio,
