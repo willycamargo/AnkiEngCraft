@@ -19,7 +19,6 @@ load_dotenv()
 # Get Azure Speech API credentials from environment variables
 azure_speech_key = os.getenv('AZURE_SPEECH_KEY')
 azure_service_region = os.getenv('AZURE_REGION')
-speech_config = SpeechConfig(subscription=azure_speech_key, region=azure_service_region)
 
 # Anki Static IDs
 anki_model_id = int(os.getenv('ANKI_MODEL_ID'))
@@ -121,7 +120,7 @@ def create_translated_card(sentence):
     return current_card
 
 # Generates the SpeechConfig with a random voice
-def get_speech_config_random_voice() -> SpeechConfig:
+def get_speech_config_with_random_voice() -> SpeechConfig:
     # Available English US voices
     english_us_voices = [
         "en-US-AmberNeural",
@@ -149,8 +148,11 @@ def get_speech_config_random_voice() -> SpeechConfig:
 
     # Choose a random English US voice
     random_voice = random.choice(english_us_voices)
+    speech_config = SpeechConfig(subscription=azure_speech_key, region=azure_service_region)
+    speech_config.speech_synthesis_language = "en-US"
+    speech_config.speech_synthesis_voice_name = random_voice
 
-    return random_voice
+    return speech_config
 
 def print_red(text):
     red = '\033[31m'
@@ -168,8 +170,7 @@ def generate_audio(text, audio_output_dir=AUDIO_OUTPUT_DIR):
         if not os.path.exists(audio_file_path):
             print(f"File {audio_file_path} does not exist, creating file using Azure Speech API.")
             audio_config = AudioConfig(filename=audio_file_path)
-            speech_config.speech_synthesis_language = "en-US"
-            speech_config.speech_synthesis_voice_name = get_speech_config_random_voice()
+            speech_config = get_speech_config_with_random_voice()
             synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
             result = synthesizer.speak_text(text)
             

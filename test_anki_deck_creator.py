@@ -2,8 +2,9 @@ import os
 import csv
 import unittest
 import tempfile
-from unittest.mock import patch, MagicMock, call
-from anki_deck_creator import read_input_file, write_csv_file, create_anki_deck, generate_translated_cards, create_translated_card, generate_audio, Translator
+from unittest.mock import patch, MagicMock
+from azure.cognitiveservices.speech import ResultReason
+from anki_deck_creator import read_input_file, write_csv_file, create_anki_deck, generate_translated_cards, create_translated_card, get_speech_config_with_random_voice, generate_audio, Translator
 
 class TestAnkiDeckCreator(unittest.TestCase):
     def setUp(self):
@@ -101,28 +102,73 @@ class TestAnkiDeckCreator(unittest.TestCase):
         self.assertTrue(all([card["Back"] == "translated" for card in cards]))
 
     @patch("anki_deck_creator.Translator")
-    @patch("anki_deck_creator.SpeechSynthesizer")
-    @patch("anki_deck_creator.SpeechConfig")
-    def test_create_translated_card(self, mock_speech_config, mock_speech_synthesizer, mock_translator):
-        sentence = "Test sentence"
+    @patch("anki_deck_creator.generate_audio")
+    def test_create_translated_card(self, mock_generate_audio, mock_translator):
+        sentence = "Hello, World!"
+        translated_text = "Olá, Mundo!"
+        audio_file_name = "hello-world"
+        audio_file_path = f"{self.audio_output_dir}/{audio_file_name}.mp3"
+        
         mock_translation = MagicMock()
-        mock_translation.text = "translated"
-        mock_translator.return_value.translate.return_value = mock_translation
-        card = create_translated_card(sentence)
-        self.assertEqual(card["Front"], sentence)
-        self.assertEqual(card["Back"], "translated")
+        mock_translation.text = translated_text
+        mock_translator_instance = MagicMock()
+        mock_translator_instance.translate.return_value = mock_translation
+        mock_translator.return_value = mock_translator_instance
+        mock_generate_audio.return_value = (audio_file_name, audio_file_path)
+        
+        expected_card = {
+            "Front": sentence,
+            "Back": translated_text,
+            "AudioTag": f"[sound:{audio_file_name}.mp3]",
+            "AudioPath": audio_file_path
+        }
+        
+        # Act
+        result_card = create_translated_card(sentence)
+        
+        # Assert
+        self.assertEqual(result_card, expected_card)
+        mock_translator_instance.translate.assert_called_once_with(sentence, src='en', dest='pt')
+        mock_generate_audio.assert_called_once_with(sentence)
     
-    @patch("anki_deck_creator.SpeechSynthesizer")
     @patch("anki_deck_creator.SpeechConfig")
+    def test_get_speech_config_with_random_voice(self, mock_speech_config):
+        speech_config = get_speech_config_with_random_voice()
+        self.assertIsNotNone(mock_speech_config.return_value)
+        self.assertEqual(mock_speech_config.return_value.speech_synthesis_language, "en-US")
+        self.assertTrue(mock_speech_config.return_value.speech_synthesis_voice_name.startswith("en-US-"))
+    
+    @patch("anki_deck_creator.get_speech_config_with_random_voice")
+    @patch("anki_deck_creator.SpeechSynthesizer")
     @patch("anki_deck_creator.AudioConfig")
-    def test_generate_audio(self, mock_audio_config, mock_speech_config, mock_speech_synthesizer):
-        text = "Test sentence"
+    def test_generate_audio(self, mock_audio_config, mock_speech_synthesizer, mock_get_speech_config):
+        # Arrange
+        text = "Hello, World!"
+        audio_file_name = "hello-world"
+        audio_file_path = f"{self.audio_output_dir}/{audio_file_name}.mp3"
 
-        mock_speech_synthesizer.return_value.speak_text = MagicMock()
-        _, audio_file_path = generate_audio(text, self.audio_output_dir)
+        # Mock result object
+        mock_result = MagicMock()
+        mock_result.reason = ResultReason.SynthesizingAudioCompleted
+
+        # Mock speech config
+        mock_speech_config = MagicMock()
+        mock_get_speech_config.return_value = mock_speech_config
+
+        # Mock synthesizer object
+        mock_synthesizer_instance = MagicMock()
+        mock_synthesizer_instance.speak_text.return_value = mock_result
+        mock_speech_synthesizer.return_value = mock_synthesizer_instance
+
+        # Act
+        result_file_name, result_file_path = generate_audio(text, audio_output_dir=self.audio_output_dir)
+
+        # Assert
+        self.assertEqual(result_file_name, audio_file_name)
+        self.assertEqual(result_file_path, audio_file_path)
         mock_audio_config.assert_called_once_with(filename=audio_file_path)
-        mock_speech_synthesizer.assert_called_once()
-        mock_speech_synthesizer.return_value.speak_text.assert_called_once_with(text)
+        mock_speech_synthesizer.assert_called_once_with(speech_config=mock_speech_config, audio_config=mock_audio_config.return_value)
+        mock_synthesizer_instance.speak_text.assert_called_once_with(text)
 
 
 if __name__ == "__main__":
