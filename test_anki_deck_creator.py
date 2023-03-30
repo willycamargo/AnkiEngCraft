@@ -1,10 +1,16 @@
+import sys
+import io
 import os
 import csv
 import unittest
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from azure.cognitiveservices.speech import ResultReason
-from anki_deck_creator import read_input_file, write_csv_file, create_anki_deck, generate_translated_cards, create_translated_card, get_speech_config_with_random_voice, generate_audio, Translator
+from anki_deck_creator import read_input_file, write_csv_file, create_anki_deck, generate_translated_cards, create_translated_card, get_speech_config_with_random_voice, generate_audio, anki_deck_creator, Translator
+
+INPUT_DIR = 'input'
+OUTPUT_DIR = 'output'
+AUDIO_OUTPUT_DIR = f'{OUTPUT_DIR}/audio'
 
 class TestAnkiDeckCreator(unittest.TestCase):
     def setUp(self):
@@ -12,14 +18,20 @@ class TestAnkiDeckCreator(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.output_dir = os.path.join(self.temp_dir.name, "output")
         self.audio_output_dir = os.path.join(self.output_dir, "audio")
-        
+
         # Create necessary directories
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.audio_output_dir, exist_ok=True)
 
+        # Suppress print logs
+        self.original_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+
     def tearDown(self):
         # Remove output directory after tests
         self.temp_dir.cleanup()
+        # Restore original stdout
+        sys.stdout = self.original_stdout
 
     def test_read_input_file_csv(self):
         with tempfile.NamedTemporaryFile(mode="w+", suffix=".csv") as temp_file:
@@ -134,9 +146,9 @@ class TestAnkiDeckCreator(unittest.TestCase):
     @patch("anki_deck_creator.SpeechConfig")
     def test_get_speech_config_with_random_voice(self, mock_speech_config):
         speech_config = get_speech_config_with_random_voice()
-        self.assertIsNotNone(mock_speech_config.return_value)
-        self.assertEqual(mock_speech_config.return_value.speech_synthesis_language, "en-US")
-        self.assertTrue(mock_speech_config.return_value.speech_synthesis_voice_name.startswith("en-US-"))
+        self.assertIsNotNone(speech_config)
+        self.assertEqual(speech_config.speech_synthesis_language, "en-US")
+        self.assertTrue(speech_config.speech_synthesis_voice_name.startswith("en-US-"))
     
     @patch("anki_deck_creator.get_speech_config_with_random_voice")
     @patch("anki_deck_creator.SpeechSynthesizer")
@@ -169,6 +181,32 @@ class TestAnkiDeckCreator(unittest.TestCase):
         mock_audio_config.assert_called_once_with(filename=audio_file_path)
         mock_speech_synthesizer.assert_called_once_with(speech_config=mock_speech_config, audio_config=mock_audio_config.return_value)
         mock_synthesizer_instance.speak_text.assert_called_once_with(text)
+    
+    @patch("anki_deck_creator.read_input_file")
+    @patch("anki_deck_creator.generate_translated_cards")
+    @patch("anki_deck_creator.create_anki_deck")
+    @patch("anki_deck_creator.write_csv_file")
+    def test_anki_deck_creator(self, mock_write_csv_file, mock_create_anki_deck, mock_generate_translated_cards, mock_read_input_file):
+        input_file_name = "input.csv"
+        output_file_name = "output"
+        output_format = "anki"
+        
+        # Mock input sentences and generated cards
+        sentences = ["Hello, World!", "How are you?"]
+        cards = [{"Front": "Hello, World!", "Back": "Olá, Mundo!"}, {"Front": "How are you?", "Back": "Como você está?"}]
+        
+        mock_read_input_file.return_value = sentences
+        mock_generate_translated_cards.return_value = cards
+
+        # Call anki_deck_creator
+        anki_deck_creator(input_file_name, output_file_name, output_format)
+
+        # Check if called functions are correct
+        mock_read_input_file.assert_called_once_with(f'{INPUT_DIR}/' + input_file_name)
+        mock_generate_translated_cards.assert_called_once_with(sentences)
+        mock_create_anki_deck.assert_called_once_with(output_file_name, cards, f"{OUTPUT_DIR}/{output_file_name}.apkg")
+        mock_write_csv_file.assert_not_called()
+
 
 
 if __name__ == "__main__":
