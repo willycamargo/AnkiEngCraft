@@ -68,7 +68,7 @@ Place your input file in the `input` directory.
 Run the script using the following command:
 
 ```bash
-python anki_deck_creator.py --input input_file_name --format output_format --output output_file_name
+python anki_poly.py --input input_file_name --format output_format --output output_file_name
 ```
 
 
@@ -79,7 +79,7 @@ python anki_deck_creator.py --input input_file_name --format output_format --out
 For example, to create an Anki deck from the `example.csv` input file, run:
 
 ```bash
-python anki_deck_creator.py --input example.csv --format anki --output my_deck
+python anki_poly.py --input example.csv --format anki --output my_deck
 ```
 
 The generated Anki deck or CSV file will be saved in the `output` directory.
