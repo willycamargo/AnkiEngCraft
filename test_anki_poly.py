@@ -6,9 +6,8 @@ import unittest
 import tempfile
 from unittest.mock import patch, MagicMock, call
 from azure.cognitiveservices.speech import ResultReason
-from anki_poly import read_input_file, write_csv_file, create_anki_deck, generate_translated_cards, create_translated_card, get_speech_config_with_random_voice, generate_audio, anki_poly, Translator
+from generate_cards import read_input_file, write_csv_file, create_anki_deck, create_cards_in_parallel, create_card, get_speech_config_with_random_voice, generate_audio, anki_poly, Translator
 
-INPUT_DIR = 'input'
 OUTPUT_DIR = 'output'
 AUDIO_OUTPUT_DIR = f'{OUTPUT_DIR}/audio'
 
@@ -85,13 +84,13 @@ class TestAnkiDeckCreator(unittest.TestCase):
     @patch("anki_poly.cpu_count")
     @patch("anki_poly.Pool")
     @patch("anki_poly.partial")
-    def test_generate_translated_cards(self, mock_partial, mock_pool, mock_cpu_count):
+    def test_create_cards_in_parallel(self, mock_partial, mock_pool, mock_cpu_count):
         sentences = ["Test sentence", "Another test sentence"]
 
         # Mock the cpu_count function
         mock_cpu_count.return_value = 4
 
-        # Mock the card returned by create_translated_card
+        # Mock the card returned by create_card
         mock_card = {
             "Front": "Test sentence",
             "Back": "translated",
@@ -103,19 +102,19 @@ class TestAnkiDeckCreator(unittest.TestCase):
         pool_instance = mock_pool.return_value.__enter__.return_value
         pool_instance.map.return_value = [mock_card] * len(sentences)
 
-        cards = generate_translated_cards(sentences)
+        cards = create_cards_in_parallel(sentences)
 
         # Check if the functions were called properly
         mock_cpu_count.assert_called_once()
         mock_pool.assert_called_once_with(mock_cpu_count.return_value)
-        mock_partial.assert_called_once_with(create_translated_card)
+        mock_partial.assert_called_once_with(create_card)
 
         self.assertEqual(len(cards), len(sentences))
         self.assertTrue(all([card["Back"] == "translated" for card in cards]))
 
     @patch("anki_poly.Translator")
     @patch("anki_poly.generate_audio")
-    def test_create_translated_card(self, mock_generate_audio, mock_translator):
+    def test_create_card(self, mock_generate_audio, mock_translator):
         sentence = "Hello, World!"
         translated_text = "Olá, Mundo!"
         audio_file_name = "hello-world"
@@ -136,7 +135,7 @@ class TestAnkiDeckCreator(unittest.TestCase):
         }
         
         # Act
-        result_card = create_translated_card(sentence)
+        result_card = create_card(sentence)
         
         # Assert
         self.assertEqual(result_card, expected_card)
@@ -183,11 +182,11 @@ class TestAnkiDeckCreator(unittest.TestCase):
         mock_synthesizer_instance.speak_text.assert_called_once_with(text)
     
     @patch("anki_poly.read_input_file")
-    @patch("anki_poly.generate_translated_cards")
+    @patch("anki_poly.create_cards_in_parallel")
     @patch("anki_poly.create_anki_deck")
     @patch("anki_poly.write_csv_file")
-    def test_anki_poly(self, mock_write_csv_file, mock_create_anki_deck, mock_generate_translated_cards, mock_read_input_file):
-        input_file_name = "input.csv"
+    def test_anki_poly(self, mock_write_csv_file, mock_create_anki_deck, mock_create_cards_in_parallel, mock_read_input_file):
+        input_file = "input.csv"
         output_file_name = "output"
         output_format = "anki"
         
@@ -196,14 +195,14 @@ class TestAnkiDeckCreator(unittest.TestCase):
         cards = [{"Front": "Hello, World!", "Back": "Olá, Mundo!"}, {"Front": "How are you?", "Back": "Como você está?"}]
         
         mock_read_input_file.return_value = sentences
-        mock_generate_translated_cards.return_value = cards
+        mock_create_cards_in_parallel.return_value = cards
 
         # Call anki_poly
-        anki_poly(input_file_name, output_file_name, output_format)
+        anki_poly(input_file, output_file_name, output_format)
 
         # Check if called functions are correct
-        mock_read_input_file.assert_called_once_with(f'{INPUT_DIR}/' + input_file_name)
-        mock_generate_translated_cards.assert_called_once_with(sentences)
+        mock_read_input_file.assert_called_once_with(input_file)
+        mock_create_cards_in_parallel.assert_called_once_with(sentences)
         mock_create_anki_deck.assert_called_once_with(output_file_name, cards, f"{OUTPUT_DIR}/{output_file_name}.apkg")
         mock_write_csv_file.assert_not_called()
 
