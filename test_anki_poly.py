@@ -6,7 +6,7 @@ import unittest
 import tempfile
 from unittest.mock import patch, MagicMock, call
 from azure.cognitiveservices.speech import ResultReason
-from generate_cards import read_input_file, write_csv_file, create_anki_deck, create_cards_in_parallel, create_card, get_speech_config_with_random_voice, generate_audio, anki_poly, Translator
+from anki_poly import read_input_file, write_csv_file, create_anki_deck, create_cards_in_parallel, create_card, get_speech_config_with_random_voice, generate_audio, anki_poly, Translator
 
 OUTPUT_DIR = 'output'
 AUDIO_OUTPUT_DIR = f'{OUTPUT_DIR}/audio'
