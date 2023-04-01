@@ -197,7 +197,7 @@ def generate_audio(text, audio_output_dir=AUDIO_OUTPUT_DIR):
 
 # Reads an input file, generates translated cards with audio,
 # and creates either an Anki deck or a CSV file based on the specified output format.
-def anki_poly(input_file, output_file_name, output_format):
+def main(input_file, output_file_name, output_format):
     # Create necessary directories
     os.makedirs(f"{OUTPUT_DIR}", exist_ok=True)
     os.makedirs(f"{AUDIO_OUTPUT_DIR}", exist_ok=True)
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     output_file_name = os.path.splitext(args.output if args.output else input_file)[0]
     output_format = args.format
     start_time = time.time()
-    anki_poly(input_file, output_file_name, output_format)
+    main(input_file, output_file_name, output_format)
     num_cards = len(read_input_file(input_file))
     end_time = time.time()
     time_taken = end_time - start_time

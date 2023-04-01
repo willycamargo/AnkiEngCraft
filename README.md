@@ -1,6 +1,8 @@
-# AnkiPoly
+# AnkiEngCraft
 
-AnkiPoly is a versatile Anki deck generator designed specifically for Portuguese speakers learning English. Simplifying the process of creating custom Anki decks, AnkiPoly accelerates your language learning journey. With future plans for multi-language support and UI expansion, AnkiPoly aims to become an essential tool for polyglots and language enthusiasts alike.
+AnkiEngCraft is an Anki deck generator designed exclusively for Portuguese speakers learning English. By streamlining the process of creating custom Anki decks, AnkiEngCraft accelerates your language learning journey. 
+
+*While other language support was initially considered, AnkiEngCraft will remain focused on aiding Portuguese speakers in mastering the English language.*
 
 ## Features
 
@@ -8,14 +10,13 @@ AnkiPoly is a versatile Anki deck generator designed specifically for Portuguese
 - Translate English sentences to Portuguese using Google Translate
 - Generate English audio using Azure Speech API
 - Create Anki decks (.apkg) or CSV files with translated sentences and audio files
-- Currently focused on supporting Portuguese speakers learning English, with plans to expand to other language
+- Solely supports Portuguese speakers learning English
 
 ## Future Plans
 
-- Add support for more languages
+- Continue refining and expanding features for learning English
 - Develop a dedicated user interface for easier deck creation and customization
 - Integrate additional translation and speech synthesis APIs
-
 
 ## Requirements
 
@@ -66,7 +67,7 @@ The sky is blue.
 Run the script using the following command:
 
 ```bash
-python anki_poly.py --input input/input_file_name --format output_format --output output_file_name
+python main.py --input input/input_file_name --format output_format --output output_file_name
 ```
 
 
@@ -77,7 +78,7 @@ python anki_poly.py --input input/input_file_name --format output_format --outpu
 For example, to create an Anki deck from the `example.csv` input file, run:
 
 ```bash
-python anki_poly.py --input input/example.csv --format anki --output my_deck
+python main.py --input input/example.csv --format anki --output my_deck
 ```
 
 The generated Anki deck or CSV file will be saved in the `output` directory.

@@ -6,7 +6,7 @@ import unittest
 import tempfile
 from unittest.mock import patch, MagicMock, call
 from azure.cognitiveservices.speech import ResultReason
-from anki_poly import read_input_file, write_csv_file, create_anki_deck, create_cards_in_parallel, create_card, get_speech_config_with_random_voice, generate_audio, anki_poly, Translator
+from main import read_input_file, write_csv_file, create_anki_deck, create_cards_in_parallel, create_card, get_speech_config_with_random_voice, generate_audio, main, Translator
 
 OUTPUT_DIR = 'output'
 AUDIO_OUTPUT_DIR = f'{OUTPUT_DIR}/audio'
@@ -81,9 +81,9 @@ class TestAnkiDeckCreator(unittest.TestCase):
         # Remove the temporary audio file
         os.remove(temp_audio.name)
 
-    @patch("anki_poly.cpu_count")
-    @patch("anki_poly.Pool")
-    @patch("anki_poly.partial")
+    @patch("main.cpu_count")
+    @patch("main.Pool")
+    @patch("main.partial")
     def test_create_cards_in_parallel(self, mock_partial, mock_pool, mock_cpu_count):
         sentences = ["Test sentence", "Another test sentence"]
 
@@ -112,8 +112,8 @@ class TestAnkiDeckCreator(unittest.TestCase):
         self.assertEqual(len(cards), len(sentences))
         self.assertTrue(all([card["Back"] == "translated" for card in cards]))
 
-    @patch("anki_poly.Translator")
-    @patch("anki_poly.generate_audio")
+    @patch("main.Translator")
+    @patch("main.generate_audio")
     def test_create_card(self, mock_generate_audio, mock_translator):
         sentence = "Hello, World!"
         translated_text = "Olá, Mundo!"
@@ -142,16 +142,16 @@ class TestAnkiDeckCreator(unittest.TestCase):
         mock_translator_instance.translate.assert_called_once_with(sentence, src='en', dest='pt')
         mock_generate_audio.assert_called_once_with(sentence)
     
-    @patch("anki_poly.SpeechConfig")
+    @patch("main.SpeechConfig")
     def test_get_speech_config_with_random_voice(self, mock_speech_config):
         speech_config = get_speech_config_with_random_voice()
         self.assertIsNotNone(speech_config)
         self.assertEqual(speech_config.speech_synthesis_language, "en-US")
         self.assertTrue(speech_config.speech_synthesis_voice_name.startswith("en-US-"))
     
-    @patch("anki_poly.get_speech_config_with_random_voice")
-    @patch("anki_poly.SpeechSynthesizer")
-    @patch("anki_poly.AudioConfig")
+    @patch("main.get_speech_config_with_random_voice")
+    @patch("main.SpeechSynthesizer")
+    @patch("main.AudioConfig")
     def test_generate_audio(self, mock_audio_config, mock_speech_synthesizer, mock_get_speech_config):
         # Arrange
         text = "Hello, World!"
@@ -181,11 +181,11 @@ class TestAnkiDeckCreator(unittest.TestCase):
         mock_speech_synthesizer.assert_called_once_with(speech_config=mock_speech_config, audio_config=mock_audio_config.return_value)
         mock_synthesizer_instance.speak_text.assert_called_once_with(text)
     
-    @patch("anki_poly.read_input_file")
-    @patch("anki_poly.create_cards_in_parallel")
-    @patch("anki_poly.create_anki_deck")
-    @patch("anki_poly.write_csv_file")
-    def test_anki_poly(self, mock_write_csv_file, mock_create_anki_deck, mock_create_cards_in_parallel, mock_read_input_file):
+    @patch("main.read_input_file")
+    @patch("main.create_cards_in_parallel")
+    @patch("main.create_anki_deck")
+    @patch("main.write_csv_file")
+    def test_main(self, mock_write_csv_file, mock_create_anki_deck, mock_create_cards_in_parallel, mock_read_input_file):
         input_file = "input.csv"
         output_file_name = "output"
         output_format = "anki"
@@ -197,8 +197,8 @@ class TestAnkiDeckCreator(unittest.TestCase):
         mock_read_input_file.return_value = sentences
         mock_create_cards_in_parallel.return_value = cards
 
-        # Call anki_poly
-        anki_poly(input_file, output_file_name, output_format)
+        # Call main
+        main(input_file, output_file_name, output_format)
 
         # Check if called functions are correct
         mock_read_input_file.assert_called_once_with(input_file)
