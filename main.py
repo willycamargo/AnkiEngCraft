@@ -39,14 +39,14 @@ def read_input_file(file_name):
             try:
                 csv_data = list(reader)
                 if 'sentence' in csv_data[0]:
-                    sentences = [d['sentence'] for d in csv_data]
+                    sentences = [d['sentence'] for d in csv_data if d['sentence'].strip()]
                 else:
                     raise ValueError('CSV file does not contain a "sentence" column.')
             except csv.Error as e:
                 raise ValueError('File is not a valid CSV.') from e
     else:
         with open(file_name, 'r') as f:
-            sentences = f.read().splitlines()
+            sentences = [line for line in f.read().splitlines() if line.strip()]
 
     return sentences
 

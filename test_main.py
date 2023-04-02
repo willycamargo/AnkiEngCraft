@@ -34,14 +34,14 @@ class TestAnkiDeckCreator(unittest.TestCase):
 
     def test_read_input_file_csv(self):
         with tempfile.NamedTemporaryFile(mode="w+", suffix=".csv") as temp_file:
-            temp_file.write("sentence\nTest sentence\nAnother test sentence\n")
+            temp_file.write("sentence\nTest sentence\n\n\n\nAnother test sentence\n\n\n\n")
             temp_file.seek(0)
             sentences = read_input_file(temp_file.name)
             self.assertEqual(sentences, ["Test sentence", "Another test sentence"])
 
     def test_read_input_file_txt(self):
         with tempfile.NamedTemporaryFile(mode="w+", suffix=".txt") as temp_file:
-            temp_file.write("Test sentence\nAnother test sentence\n")
+            temp_file.write("Test sentence\n\n\n\nAnother test sentence\n\n\n\n")
             temp_file.seek(0)
             sentences = read_input_file(temp_file.name)
             self.assertEqual(sentences, ["Test sentence", "Another test sentence"])
