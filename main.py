@@ -132,7 +132,6 @@ def get_speech_config_with_random_voice():
     # Available English US voices
     english_us_voices = [
         "en-US-AmberNeural",
-        "en-US-AnaNeural",
         "en-US-AriaNeural",
         "en-US-AshleyNeural",
         "en-US-BrandonNeural",
