@@ -1,22 +1,13 @@
 # AnkiEngCraft
 
-AnkiEngCraft is an Anki deck generator designed exclusively for Portuguese speakers learning English. By streamlining the process of creating custom Anki decks, AnkiEngCraft accelerates your language learning journey. 
-
-*While other language support was initially considered, AnkiEngCraft will remain focused on aiding Portuguese speakers in mastering the English language.*
+AnkiEngCraft is an Anki deck generator designed for Portuguese speakers learning English.
 
 ## Features
 
-- Read input sentences from CSV or TXT files
+- Read English sentences from CSV or TXT files
 - Translate English sentences to Portuguese using Google Translate
 - Generate English audio using Azure Speech API
 - Create Anki decks (.apkg) or CSV files with translated sentences and audio files
-- Solely supports Portuguese speakers learning English
-
-## Future Plans
-
-- Continue refining and expanding features for learning English
-- Develop a dedicated user interface for easier deck creation and customization
-- Integrate additional translation and speech synthesis APIs
 
 ## Requirements
 
@@ -69,7 +60,6 @@ Run the script using the following command:
 ```bash
 python main.py --input input/input_file_name --format output_format --output output_file_name
 ```
-
 
 - `input_file_name`: The name of the input file (with extension) located in the `input` directory.
 - `output_format`: The desired output format (`anki` for Anki deck or `csv` for CSV file).
