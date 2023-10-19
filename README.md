@@ -6,13 +6,13 @@ AnkiEngCraft is an Anki deck generator designed for Portuguese speakers learning
 
 - Read English sentences from CSV or TXT files
 - Translate English sentences to Portuguese using Google Translate
-- Generate English audio using Azure Speech API
+- Generate English audio using Azure Speech API or AWS Polly.
 - Create Anki decks (.apkg) or CSV files with translated sentences and audio files
 
 ## Requirements
 
 - Python 3.6+
-- Azure Speech API key (you can sign up for a free trial)
+- Azure Speech API key (you can sign up for a free trial) or AWS credentials for Polly
 
 ## Installation
 
@@ -28,7 +28,7 @@ cd csv-google-translate-python
 pip install -r requirements.txt
 ```
 
-3. Create a `.env` file using the provided `.env.example` file and fill in the `AZURE_SPEECH_KEY` and `AZURE_REGION` with your Azure Speech API key and region, respectively:
+3. Create a `.env` file using the provided `.env.example` file and fill in the `AZURE_SPEECH_KEY` and `AZURE_REGION` with your Azure Speech API key and region, respectively. If you are using AWS Polly, provide the appropriate AWS credentials:
 
 ```bash
 cp .env.example .env

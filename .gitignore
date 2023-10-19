@@ -134,3 +134,6 @@ dmypy.json
 input
 output
 .env
+
+# Ignore WebStorm project files
+.idea/

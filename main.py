@@ -11,8 +11,15 @@ from dotenv import load_dotenv
 from functools import partial
 from googletrans import Translator
 from multiprocessing import Pool, cpu_count
-from azure.cognitiveservices.speech import SpeechConfig, SpeechSynthesizer, AudioConfig, ResultReason, SpeechSynthesisCancellationDetails
+from azure.cognitiveservices.speech import (
+    SpeechConfig,
+    SpeechSynthesizer,
+    AudioConfig,
+    ResultReason,
+    SpeechSynthesisCancellationDetails,
+)
 from slugify import slugify
+import boto3
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -20,6 +27,11 @@ load_dotenv()
 # Get Azure Speech API credentials from environment variables
 azure_speech_key = os.getenv('AZURE_SPEECH_KEY')
 azure_service_region = os.getenv('AZURE_REGION')
+
+# Get AWS credentials from environment variables
+aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
+aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+aws_region = os.getenv('AWS_REGION')
 
 # Anki Static IDs
 anki_model_id = int(os.getenv('ANKI_MODEL_ID'))
@@ -161,6 +173,31 @@ def get_speech_config_with_random_voice():
 
     return speech_config
 
+def generate_audio_with_aws_polly(text, audio_output_dir=AUDIO_OUTPUT_DIR, rate="90%"):
+    #TODO: Add support for pitch
+    polly_client = boto3.client(
+        'polly',
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        region_name=aws_region
+    )
+
+    audio_file_name = slugify(text)
+    audio_file_path = f"{audio_output_dir}/{audio_file_name}.mp3"
+
+    ssml_text = f'<speak><prosody rate="{rate}">{text}</prosody></speak>'
+
+    response = polly_client.synthesize_speech(VoiceId='Amy',
+                                              OutputFormat='mp3',
+                                              Text=ssml_text,
+                                              TextType="ssml")
+
+    with open(audio_file_path, 'wb') as file:
+        file.write(response['AudioStream'].read())
+
+    return [audio_file_name, audio_file_path]
+
+
 # Generates an audio for a given text using Azure Speech API and saves the audio file as an MP3
 MAX_RETRIES_TO_GENERATE_AUDIO = 5
 def generate_audio(text, audio_output_dir=AUDIO_OUTPUT_DIR):
@@ -168,30 +205,32 @@ def generate_audio(text, audio_output_dir=AUDIO_OUTPUT_DIR):
     audio_file_path = f"{audio_output_dir}/{audio_file_name}.mp3"
     logger.info(f"Checking if audio file {audio_file_path} exists.")
 
-    for i in range(MAX_RETRIES_TO_GENERATE_AUDIO):
-        if not os.path.exists(audio_file_path):
-            logger.info(f"File {audio_file_path} does not exist, creating file using Azure Speech API.")
-            audio_config = AudioConfig(filename=audio_file_path)
-            speech_config = get_speech_config_with_random_voice()
-            synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
-            result = synthesizer.speak_text(text)
-            
-            if result.reason == ResultReason.SynthesizingAudioCompleted:
-                logger.info("Audio file created successfully.")
-                break
-            elif result.reason == ResultReason.Canceled:
-                cancellation_details = SpeechSynthesisCancellationDetails(result)
-                logger.error(f"Speech synthesis was canceled. Reason: {cancellation_details.reason}")
-                if cancellation_details.error_details:
-                    logger.error(f"Error details: {cancellation_details.error_details}")
-                
-                # Remove the file and retry
-                os.remove(audio_file_path)
-        else:
-            break
-    else:
-        raise Exception(f"Failed to create audio file {audio_file_path} after {MAX_RETRIES_TO_GENERATE_AUDIO} retries.")
+    if azure_speech_key:
+        for i in range(MAX_RETRIES_TO_GENERATE_AUDIO):
+            if not os.path.exists(audio_file_path):
+                logger.info(f"File {audio_file_path} does not exist, creating file using Azure Speech API.")
+                audio_config = AudioConfig(filename=audio_file_path)
+                speech_config = get_speech_config_with_random_voice()
+                synthesizer = SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+                result = synthesizer.speak_text(text)
 
+                if result.reason == ResultReason.SynthesizingAudioCompleted:
+                    logger.info("Audio file created successfully.")
+                    break
+                elif result.reason == ResultReason.Canceled:
+                    cancellation_details = SpeechSynthesisCancellationDetails(result)
+                    logger.error(f"Speech synthesis was canceled. Reason: {cancellation_details.reason}")
+                    if cancellation_details.error_details:
+                        logger.error(f"Error details: {cancellation_details.error_details}")
+
+                    # Remove the file and retry
+                    os.remove(audio_file_path)
+            else:
+                break
+        else:
+            raise Exception(f"Failed to create audio file {audio_file_path} after {MAX_RETRIES_TO_GENERATE_AUDIO} retries.")
+    else:
+        audio_file_name, audio_file_path = generate_audio_with_aws_polly(text, audio_output_dir)
     return [audio_file_name, audio_file_path]
 
 # Reads an input file, generates translated cards with audio,
